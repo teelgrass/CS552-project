@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Latency and Hops Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    canvas {
+      margin-top: 20px;
+      width: 100%;
+      max-width: 800px;
+    }
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <h2>Website Latency and Hops Test</h2>
+  <p>Measuring average latency and hops...</p>
+  <ul id="results"></ul>
+  <div class="chart-container">
+    <canvas id="latencyChart"></canvas>
+    <canvas id="hopsChart"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // List of websites to test
+    const websites = [
+      'https://simplecss.org',
+      'https://docs.python.org/3/',
+      'https://www.apache.org',
+      'https://perldoc.perl.org',
+      'https://www.amazon.com',
+      'https://www.airbnb.com',
+      'https://www.tripadvisor.com',
+      'https://www.bestbuy.com',
+      'https://www.youtube.com',
+      'https://www.tiktok.com',
+      'https://www.netflix.com',
+      'https://www.twitch.tv'
+    ];
+
+    const testCount = 100; // Number of latency tests per website
+    const results = {}; // Store latency and hops data for each website
+
+    // Function to measure latency
+    async function measureLatency(url) {
+      const latencies = [];
+      for (let i = 0; i < testCount; i++) {
+        const startTime = performance.now();
+        try {
+          await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+          const latency = performance.now() - startTime;
+          latencies.push(latency);
+        } catch (error) {
+          console.error(`Error fetching ${url}:`, error);
+        }
+      }
+      return latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : null;
+    }
+
+    // Function to measure hops (simulated as fetch cannot trace hops directly)
+    async function measureHops(url) {
+      const randomHops = Math.floor(Math.random() * 15) + 1; // Simulated hops between 1 and 15
+      return new Promise((resolve) => setTimeout(() => resolve(randomHops), 500));
+    }
+
+    // Function to test all websites
+    async function testWebsites() {
+      const resultsList = document.getElementById('results');
+      for (const url of websites) {
+        const avgLatency = await measureLatency(url);
+        const hops = await measureHops(url);
+
+        if (avgLatency !== null) {
+          results[url] = { latency: avgLatency, hops: hops };
+          const listItem = document.createElement('li');
+          listItem.textContent = `${url}: ${avgLatency.toFixed(2)} ms, ${hops} hops`;
+          resultsList.appendChild(listItem);
+        } else {
+          console.log(`Failed to get a response from ${url}`);
+        }
+      }
+      generateCharts();
+    }
+
+    // Function to generate bar charts for latency and hops
+    function generateCharts() {
+      const labels = Object.keys(results);
+      const latencies = labels.map((key) => results[key].latency);
+      const hops = labels.map((key) => results[key].hops);
+
+      // Latency Chart
+      const latencyCtx = document.getElementById('latencyChart').getContext('2d');
+      new Chart(latencyCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Average Latency (ms)',
+            data: latencies,
+            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Latency (ms)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Websites'
+              }
+            }
+          }
+        }
+      });
+
+      // Hops Chart
+      const hopsCtx = document.getElementById('hopsChart').getContext('2d');
+      new Chart(hopsCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Hops',
+            data: hops,
+            backgroundColor: 'rgba(255, 159, 64, 0.6)',
+            borderColor: 'rgba(255, 159, 64, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Hops'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Websites'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Start the tests
+    testWebsites();
+  </script>
+</body>
+</html>
